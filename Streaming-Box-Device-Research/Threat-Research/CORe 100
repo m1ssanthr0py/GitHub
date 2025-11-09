@@ -1,0 +1,24 @@
+# print("""These are example solutions for the Week 1 coding questions. """)
+# print("You can always refer to the course materials for the original questions and requirements.")
+# print("Please note that these solutions are not the only way to solve the problems, and there may be multiple valid approaches.")
+
+# print("---------------------------------- \n Module 1: Introduction to Python \n ---------------------------------")
+
+# print("1. Print your name: Use the print() function to output your name to the console ")
+# print("Your Name Here")  # Replace with your actual name
+
+# print("2. Simple calculator: Write code that prompts the user to enter\ntwo numbers and then computes and outputs the sum, difference,\nproduct, and quotient of those numbers")
+# num1 = float(input("Enter the first number: "))
+# num2 = float(input("Enter the second number: "))
+# print("Sum:", num1 + num2)
+# print("Difference:", num1 - num2)
+# print("Product:", num1 * num2)
+# if num2 != 0:
+#     print("Quotient:", num1 / num2) 
+# else:
+#     print("Cannot divide by zero")
+
+# print("3. Count characters: Write a program that takes a user input string and outputs the number of characters in the string ")
+# user_input = input("Enter a string: ")
+# print("Number of characters: " + str(len(user_input)))
+
