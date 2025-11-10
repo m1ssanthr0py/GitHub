@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
-# Install required packages including ping utilities
-RUN apt-get update && apt-get install -y curl iputils-ping && rm -rf /var/lib/apt/lists/*
+# Install required packages including network utilities
+RUN apt-get update && apt-get install -y curl iputils-ping iproute2 net-tools && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app

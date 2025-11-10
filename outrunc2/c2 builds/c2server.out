@@ -1,0 +1,12 @@
+2025-11-09 20:02:53,003 - INFO - C2 Server started on 0.0.0.0:8888
+2025-11-09 20:02:53,004 - INFO - Waiting for client connections...
+
+=== Malformed Labs C2 Server Console ===
+Commands:
+  list                    - List connected clients
+  send <client_id> <cmd>  - Send command to specific client
+  broadcast <cmd>         - Send command to all clients
+  quit                    - Stop server
+========================================
+
+C2> 

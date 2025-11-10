@@ -18,13 +18,44 @@ def get_system_info():
     """Get basic system information"""
     try:
         # Get hostname
-        hostname = subprocess.check_output(['hostname'], text=True).strip()
+        try:
+            hostname = subprocess.check_output(['hostname'], text=True).strip()
+        except:
+            hostname = socket.gethostname()
         
-        # Get IP addresses
-        ip_info = subprocess.check_output(['ip', 'addr', 'show'], text=True)
+        # Get IP addresses with fallback methods
+        ip_info = ""
+        try:
+            ip_info = subprocess.check_output(['ip', 'addr', 'show'], text=True)
+        except FileNotFoundError:
+            try:
+                # Fallback to ifconfig
+                ip_info = subprocess.check_output(['ifconfig'], text=True)
+            except FileNotFoundError:
+                # Simple socket-based approach
+                try:
+                    # Get container's IP by connecting to external host
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    s.connect(("8.8.8.8", 80))
+                    local_ip = s.getsockname()[0]
+                    s.close()
+                    ip_info = f"Container IP: {local_ip}\nHostname IP: {socket.gethostbyname(hostname)}"
+                except Exception as sock_e:
+                    ip_info = f"Network interface info unavailable: {str(sock_e)}"
+        except Exception as e:
+            ip_info = f"IP lookup error: {str(e)}"
         
         # Get uptime
-        uptime = subprocess.check_output(['uptime'], text=True).strip()
+        try:
+            uptime = subprocess.check_output(['uptime'], text=True).strip()
+        except FileNotFoundError:
+            # Read from /proc/uptime if available
+            try:
+                with open('/proc/uptime', 'r') as f:
+                    uptime_seconds = float(f.read().split()[0])
+                    uptime = f"up {uptime_seconds/3600:.1f} hours"
+            except:
+                uptime = "uptime command not available"
         
         return {
             'hostname': hostname,
