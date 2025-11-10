@@ -34,53 +34,95 @@ vtysh_exec() {
     local container=$1
     local cmd=$2
     log "Executing on $container: $cmd"
-    timeout 30 docker exec "$container" vtysh -c "$cmd" 2>/dev/null || {
-        log "Command failed or timed out on $container: $cmd"
-        return 1
-    }
+    
+    # Try multiple times with increasing timeouts
+    local attempts=0
+    local max_attempts=3
+    
+    while [ $attempts -lt $max_attempts ]; do
+        attempts=$((attempts + 1))
+        local timeout_val=$((30 + (attempts * 10)))
+        
+        if timeout $timeout_val docker exec "$container" vtysh -c "$cmd" 2>/dev/null; then
+            return 0
+        else
+            log "Attempt $attempts/$max_attempts failed on $container: $cmd"
+            if [ $attempts -lt $max_attempts ]; then
+                sleep $((attempts * 5))
+            fi
+        fi
+    done
+    
+    log "All attempts failed on $container: $cmd"
+    return 1
 }
 
-# Function to wait for container health
+# Function to wait for container health or FRR readiness
 wait_for_health() {
     local container=$1
-    local max_wait=${2:-120}
+    local max_wait=${2:-180}
     local count=0
     
-    log "Waiting for $container to be healthy..."
+    log "Waiting for $container to be ready..."
     while [ $count -lt $max_wait ]; do
         # Check if container exists first
         if ! docker ps -q --filter "name=^${container}$" >/dev/null 2>&1; then
             log "Container $container not found, waiting..."
-            sleep 5
-            count=$((count + 5))
+            sleep 10
+            count=$((count + 10))
             continue
         fi
         
-        local status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "unknown")
-        log "$container status: $status"
-        
-        if echo "$status" | grep -q "healthy"; then
-            log "$container is healthy"
-            return 0
+        # For FRR containers, check if vtysh is responding instead of health status
+        if echo "$container" | grep -q "as[0-9]"; then
+            if timeout 10 docker exec "$container" vtysh -c "show running-config" >/dev/null 2>&1; then
+                log "$container FRR is responding"
+                return 0
+            else
+                log "$container FRR not ready yet, waiting... (${count}/${max_wait}s)"
+            fi
+        else
+            local status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "unknown")
+            log "$container status: $status"
+            
+            if echo "$status" | grep -q "healthy"; then
+                log "$container is healthy"
+                return 0
+            fi
         fi
-        sleep 5
-        count=$((count + 5))
+        
+        sleep 10
+        count=$((count + 10))
     done
-    log "WARNING: $container did not become healthy within ${max_wait}s"
+    log "WARNING: $container did not become ready within ${max_wait}s"
     return 1
 }
 
 # 1. Wait for topology to build and converge
 log "Step 1: Waiting for topology to converge..."
 
-# Wait for all BGP containers to be healthy
+# Wait for all BGP containers to be ready
 for container in ashleysequeira-as1000 ashleysequeira-as1337 ashleysequeira-as2000 ashleysequeira-as3000; do
-    wait_for_health "$container"
+    wait_for_health "$container" 300  # 5 minute timeout for FRR startup
 done
 
-# Additional convergence time
-log "Waiting additional 30 seconds for BGP convergence..."
-sleep 30
+# Additional convergence time for BGP
+log "Waiting additional 60 seconds for BGP convergence..."
+sleep 60
+
+# Alternative check: Try to establish basic connectivity even if health checks failed
+log "Performing connectivity validation..."
+connectivity_tries=0
+max_connectivity_tries=30
+while [ $connectivity_tries -lt $max_connectivity_tries ]; do
+    if ping -6 -c 1 -W 2 2001:10:10:10::10 >/dev/null 2>&1; then
+        log "✓ Basic connectivity established"
+        break
+    fi
+    connectivity_tries=$((connectivity_tries + 1))
+    log "Connectivity attempt $connectivity_tries/$max_connectivity_tries failed, retrying..."
+    sleep 5
+done
 
 # Verify client can ping AS1000
 log "Verifying connectivity to AS1000..."
