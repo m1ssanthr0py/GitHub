@@ -164,6 +164,7 @@ frr defaults traditional
 service integrated-vtysh-config
 hostname ${AS1000_NAME}
 ipv6 forwarding
+route-map ALLOW_ALL permit 10
 router bgp ${ASN_1000}
  bgp router-id 1.0.0.0
  no bgp default ipv4-unicast
@@ -174,7 +175,13 @@ router bgp ${ASN_1000}
   network 2001:12:12:12::/64
   network 2001:1:33:7::/64
   neighbor ${AS2000_1000_2000_IP} activate
+  neighbor ${AS2000_1000_2000_IP} route-map ALLOW_ALL in
+  neighbor ${AS2000_1000_2000_IP} route-map ALLOW_ALL out
+  neighbor ${AS2000_1000_2000_IP} soft-reconfiguration inbound
   neighbor ${AS1337_1000_1337_IP} activate
+  neighbor ${AS1337_1000_1337_IP} route-map ALLOW_ALL in
+  neighbor ${AS1337_1000_1337_IP} route-map ALLOW_ALL out
+  neighbor ${AS1337_1000_1337_IP} soft-reconfiguration inbound
  exit-address-family
 line vty
 EOF
@@ -185,6 +192,7 @@ frr defaults traditional
 service integrated-vtysh-config
 hostname ${AS1337_NAME}
 ipv6 forwarding
+route-map ALLOW_ALL permit 10
 router bgp ${ASN_1337}
  bgp router-id 13.3.7.7
  no bgp default ipv4-unicast
@@ -192,6 +200,9 @@ router bgp ${ASN_1337}
  address-family ipv6 unicast
   network 2001:1:33:7::/64
   neighbor ${AS1000_1000_1337_IP} activate
+  neighbor ${AS1000_1000_1337_IP} route-map ALLOW_ALL in
+  neighbor ${AS1000_1000_1337_IP} route-map ALLOW_ALL out
+  neighbor ${AS1000_1000_1337_IP} soft-reconfiguration inbound
  exit-address-family
 line vty
 EOF
@@ -202,6 +213,7 @@ frr defaults traditional
 service integrated-vtysh-config
 hostname ${AS2000_NAME}
 ipv6 forwarding
+route-map ALLOW_ALL permit 10
 router bgp ${ASN_2000}
  bgp router-id 2.0.0.0
  no bgp default ipv4-unicast
@@ -211,7 +223,13 @@ router bgp ${ASN_2000}
   network 2001:12:12:12::/64
   network 2001:23:23:23::/64
   neighbor ${AS1000_1000_2000_IP} activate
+  neighbor ${AS1000_1000_2000_IP} route-map ALLOW_ALL in
+  neighbor ${AS1000_1000_2000_IP} route-map ALLOW_ALL out
+  neighbor ${AS1000_1000_2000_IP} soft-reconfiguration inbound
   neighbor ${AS3000_2000_3000_IP} activate
+  neighbor ${AS3000_2000_3000_IP} route-map ALLOW_ALL in
+  neighbor ${AS3000_2000_3000_IP} route-map ALLOW_ALL out
+  neighbor ${AS3000_2000_3000_IP} soft-reconfiguration inbound
  exit-address-family
 line vty
 EOF
@@ -222,6 +240,7 @@ frr defaults traditional
 service integrated-vtysh-config
 hostname ${AS3000_NAME}
 ipv6 forwarding
+route-map ALLOW_ALL permit 10
 router bgp ${ASN_3000}
  bgp router-id 3.0.0.0
  no bgp default ipv4-unicast
@@ -229,6 +248,9 @@ router bgp ${ASN_3000}
  address-family ipv6 unicast
   network 2001:23:23:23::/64
   neighbor ${AS2000_2000_3000_IP} activate
+  neighbor ${AS2000_2000_3000_IP} route-map ALLOW_ALL in
+  neighbor ${AS2000_2000_3000_IP} route-map ALLOW_ALL out
+  neighbor ${AS2000_2000_3000_IP} soft-reconfiguration inbound
  exit-address-family
 line vty
 EOF
