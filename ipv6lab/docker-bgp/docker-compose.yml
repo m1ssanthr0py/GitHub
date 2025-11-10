@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile
     container_name: ashleysequeira-client
     cap_add: [NET_ADMIN, NET_RAW]
+    volumes:
+      - ./outputs:/outputs:rw
     networks:
       lan_client6:
         ipv6_address: "2001:10:10:10::99"
@@ -27,6 +29,7 @@ services:
       - ./docker-bgp/as1000/frr.conf:/etc/frr/frr.conf:ro
       - ./docker-bgp/as1000/daemons:/etc/frr/daemons:ro
       - ./docker-bgp/as1000/vtysh.conf:/etc/frr/vtysh.conf:ro
+      - ./outputs:/outputs:rw
     networks:
       link_1000_2000:
         ipv6_address: "2001:12:12:12::10"
@@ -52,6 +55,7 @@ services:
       - ./docker-bgp/as1337/frr.conf:/etc/frr/frr.conf:ro
       - ./docker-bgp/as1337/daemons:/etc/frr/daemons:ro
       - ./docker-bgp/as1337/vtysh.conf:/etc/frr/vtysh.conf:ro
+      - ./outputs:/outputs:rw
     networks:
       link_1000_1337:
         ipv6_address: "2001:1:33:7::40"
@@ -73,6 +77,7 @@ services:
       - ./docker-bgp/as2000/frr.conf:/etc/frr/frr.conf:ro
       - ./docker-bgp/as2000/daemons:/etc/frr/daemons:ro
       - ./docker-bgp/as2000/vtysh.conf:/etc/frr/vtysh.conf:ro
+      - ./outputs:/outputs:rw
     networks:
       link_1000_2000:
         ipv6_address: "2001:12:12:12::20"
@@ -96,6 +101,7 @@ services:
       - ./docker-bgp/as3000/frr.conf:/etc/frr/frr.conf:ro
       - ./docker-bgp/as3000/daemons:/etc/frr/daemons:ro
       - ./docker-bgp/as3000/vtysh.conf:/etc/frr/vtysh.conf:ro
+      - ./outputs:/outputs:rw
     networks:
       link_2000_3000:
         ipv6_address: "2001:23:23:23::30"
