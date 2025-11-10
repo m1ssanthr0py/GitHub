@@ -2,7 +2,7 @@ name: docker-bgp
 services:
   client:
     build:
-      context: ./docker-bgp/client
+      context: ./client
       dockerfile: Dockerfile
     container_name: ashleysequeira-client
     cap_add: [NET_ADMIN, NET_RAW]
@@ -26,9 +26,9 @@ services:
     sysctls:
       net.ipv6.conf.all.forwarding: "1"
     volumes:
-      - ./docker-bgp/as1000/frr.conf:/etc/frr/frr.conf:ro
-      - ./docker-bgp/as1000/daemons:/etc/frr/daemons:ro
-      - ./docker-bgp/as1000/vtysh.conf:/etc/frr/vtysh.conf:ro
+      - ./as1000/frr.conf:/etc/frr/frr.conf:ro
+      - ./as1000/daemons:/etc/frr/daemons:ro
+      - ./as1000/vtysh.conf:/etc/frr/vtysh.conf:ro
       - ./outputs:/outputs:rw
     networks:
       link_1000_2000:
@@ -52,9 +52,9 @@ services:
     sysctls:
       net.ipv6.conf.all.forwarding: "1"
     volumes:
-      - ./docker-bgp/as1337/frr.conf:/etc/frr/frr.conf:ro
-      - ./docker-bgp/as1337/daemons:/etc/frr/daemons:ro
-      - ./docker-bgp/as1337/vtysh.conf:/etc/frr/vtysh.conf:ro
+      - ./as1337/frr.conf:/etc/frr/frr.conf:ro
+      - ./as1337/daemons:/etc/frr/daemons:ro
+      - ./as1337/vtysh.conf:/etc/frr/vtysh.conf:ro
       - ./outputs:/outputs:rw
     networks:
       link_1000_1337:
@@ -74,9 +74,9 @@ services:
     sysctls:
       net.ipv6.conf.all.forwarding: "1"
     volumes:
-      - ./docker-bgp/as2000/frr.conf:/etc/frr/frr.conf:ro
-      - ./docker-bgp/as2000/daemons:/etc/frr/daemons:ro
-      - ./docker-bgp/as2000/vtysh.conf:/etc/frr/vtysh.conf:ro
+      - ./as2000/frr.conf:/etc/frr/frr.conf:ro
+      - ./as2000/daemons:/etc/frr/daemons:ro
+      - ./as2000/vtysh.conf:/etc/frr/vtysh.conf:ro
       - ./outputs:/outputs:rw
     networks:
       link_1000_2000:
@@ -98,9 +98,9 @@ services:
     sysctls:
       net.ipv6.conf.all.forwarding: "1"
     volumes:
-      - ./docker-bgp/as3000/frr.conf:/etc/frr/frr.conf:ro
-      - ./docker-bgp/as3000/daemons:/etc/frr/daemons:ro
-      - ./docker-bgp/as3000/vtysh.conf:/etc/frr/vtysh.conf:ro
+      - ./as3000/frr.conf:/etc/frr/frr.conf:ro
+      - ./as3000/daemons:/etc/frr/daemons:ro
+      - ./as3000/vtysh.conf:/etc/frr/vtysh.conf:ro
       - ./outputs:/outputs:rw
     networks:
       link_2000_3000:
