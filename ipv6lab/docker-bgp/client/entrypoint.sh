@@ -6,6 +6,17 @@
 echo "=== BGP Hijacking Lab Starting ==="
 echo "$(date): Script initiated"
 
+# Debug: Check Docker access
+log "Checking Docker access..."
+if docker ps >/dev/null 2>&1; then
+    log "✓ Docker access confirmed"
+    log "Available containers:"
+    docker ps --format "table {{.Names}}\t{{.Status}}"
+else
+    log "✗ Docker access failed - this will cause the script to fail"
+    exit 1
+fi
+
 # Function to log with timestamp
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S'): $1"
@@ -22,7 +33,11 @@ exec_on_container() {
 vtysh_exec() {
     local container=$1
     local cmd=$2
-    docker exec "$container" vtysh -c "$cmd"
+    log "Executing on $container: $cmd"
+    timeout 30 docker exec "$container" vtysh -c "$cmd" 2>/dev/null || {
+        log "Command failed or timed out on $container: $cmd"
+        return 1
+    }
 }
 
 # Function to wait for container health
@@ -33,12 +48,23 @@ wait_for_health() {
     
     log "Waiting for $container to be healthy..."
     while [ $count -lt $max_wait ]; do
-        if docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null | grep -q "healthy"; then
+        # Check if container exists first
+        if ! docker ps -q --filter "name=^${container}$" >/dev/null 2>&1; then
+            log "Container $container not found, waiting..."
+            sleep 5
+            count=$((count + 5))
+            continue
+        fi
+        
+        local status=$(docker inspect --format='{{.State.Health.Status}}' "$container" 2>/dev/null || echo "unknown")
+        log "$container status: $status"
+        
+        if echo "$status" | grep -q "healthy"; then
             log "$container is healthy"
             return 0
         fi
-        sleep 2
-        count=$((count + 2))
+        sleep 5
+        count=$((count + 5))
     done
     log "WARNING: $container did not become healthy within ${max_wait}s"
     return 1

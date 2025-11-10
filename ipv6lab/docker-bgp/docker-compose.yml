@@ -8,6 +8,7 @@ services:
     cap_add: [NET_ADMIN, NET_RAW]
     volumes:
       - ./outputs:/outputs:rw
+      - /var/run/docker.sock:/var/run/docker.sock:rw
     networks:
       lan_client6:
         ipv6_address: "2001:10:10:10::99"
