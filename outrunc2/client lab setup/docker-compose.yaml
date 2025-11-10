@@ -4,26 +4,32 @@ services:
     container_name: linux_endpoint1
     command: >
       sh -c "apk add --no-cache python3 py3-pip && tail -f /dev/null"
+    stdin_open: true
+    tty: true
     networks:
       lab_network:
         ipv4_address: 192.168.210.10
     hostname: endpoint1
 
   endpoint2:
-    image: ubuntu:latest
+    image: alpine:latest
     container_name: linux_endpoint2
     command: >
-      sh -c "apt-get update && apt-get install -y python3 python3-pip && tail -f /dev/null"
+      sh -c "apk add --no-cache python3 py3-pip && tail -f /dev/null"
+    stdin_open: true
+    tty: true
     networks:
       lab_network:
         ipv4_address: 192.168.210.11
     hostname: endpoint2
 
   endpoint3:
-    image: centos:7
+    image: alpine:latest
     container_name: linux_endpoint3
     command: >
-      sh -c "yum update -y && yum install -y python3 python3-pip && tail -f /dev/null"
+      sh -c "apk add --no-cache python3 py3-pip && tail -f /dev/null"
+    stdin_open: true
+    tty: true
     networks:
       lab_network:
         ipv4_address: 192.168.210.12
@@ -38,11 +44,13 @@ services:
       - "8080:8080"    # Web interface
       - "8888:8888"    # C2 server
       - "8889:8889"    # C2 management console
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     cap_add:
       - NET_RAW
     networks:
       lab_network:
-        ipv4_address: 192.168.210.13
+        ipv4_address: 192.168.210.170
     hostname: outrun-server
     restart: unless-stopped
     healthcheck:

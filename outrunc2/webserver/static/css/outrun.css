@@ -207,6 +207,163 @@ body {
     color: #00FFFF;
 }
 
+/* Client Management Panel */
+.client-panel {
+    grid-column: 1 / -1;
+    margin-bottom: 20px;
+}
+
+.client-container {
+    background: #050505;
+    border: 2px solid #6600FF;
+    border-radius: 5px;
+    padding: 15px;
+    font-family: 'Courier New', monospace;
+}
+
+.client-status {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(46, 0, 62, 0.3);
+    border-radius: 3px;
+    border: 1px solid #6600FF;
+}
+
+.client-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.client-item {
+    padding: 8px;
+    border-radius: 3px;
+    border: 1px solid #6600FF;
+    background: rgba(5, 5, 5, 0.5);
+}
+
+.client-item.online {
+    border-color: #00FFFF;
+    background: rgba(0, 255, 255, 0.05);
+}
+
+.client-item.offline {
+    border-color: #FF0099;
+    background: rgba(255, 0, 153, 0.05);
+}
+
+.client-name {
+    font-weight: 700;
+    color: #FF0099;
+    margin-bottom: 3px;
+}
+
+.client-item.online .client-name {
+    color: #00FFFF;
+}
+
+.client-details {
+    font-size: 0.8rem;
+    color: #6600FF;
+}
+
+.client-controls {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(46, 0, 62, 0.2);
+    border-radius: 3px;
+    border: 1px solid #6600FF;
+}
+
+.command-section {
+    margin-bottom: 10px;
+}
+
+.client-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.individual-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.client-btn {
+    background: linear-gradient(45deg, #2E003E, #6600FF);
+    border: 1px solid #6600FF;
+    color: #00FFFF;
+    padding: 8px 12px;
+    border-radius: 3px;
+    font-family: 'Orbitron', monospace;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.client-btn:hover {
+    background: linear-gradient(45deg, #6600FF, #FF0099);
+    border-color: #FF0099;
+    color: white;
+    box-shadow: 0 0 10px rgba(255, 0, 153, 0.5);
+    transform: translateY(-1px);
+}
+
+.client-btn:active {
+    transform: translateY(0);
+}
+
+.client-output {
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: rgba(5, 5, 5, 0.8);
+    border: 1px solid #6600FF;
+    border-radius: 3px;
+    padding: 10px;
+}
+
+.client-result {
+    margin: 10px 0;
+    padding: 8px;
+    border-radius: 3px;
+    border-left: 3px solid #6600FF;
+    background: rgba(46, 0, 62, 0.2);
+}
+
+.client-result.success {
+    border-left-color: #00FFFF;
+}
+
+.client-result.error {
+    border-left-color: #FF0099;
+}
+
+.client-result-header {
+    font-weight: 700;
+    color: #FF0099;
+    margin-bottom: 5px;
+}
+
+.client-result.success .client-result-header {
+    color: #00FFFF;
+}
+
+.client-result-output {
+    font-size: 0.9rem;
+    color: #00FFFF;
+    white-space: pre-wrap;
+}
+
+.client-result.error .client-result-output {
+    color: #FF0099;
+}
+
 /* Terminal styles */
 .terminal-container {
     background: #050505;
@@ -354,6 +511,18 @@ body {
     
     .execute-btn {
         margin-top: 10px;
+    }
+    
+    .client-buttons {
+        flex-direction: column;
+    }
+    
+    .individual-buttons {
+        grid-template-columns: 1fr;
+    }
+    
+    .client-info {
+        grid-template-columns: 1fr;
     }
     
     .navigation-bar {

@@ -8,27 +8,53 @@ class OutrunTerminal {
         this.commandSelect = document.getElementById('commandSelect');
         this.executeBtn = document.getElementById('executeBtn');
         
+        // Client management elements
+        this.clientStatus = document.getElementById('clientStatus');
+        this.clientOutput = document.getElementById('clientOutput');
+        this.clientCommandSelect = document.getElementById('clientCommandSelect');
+        this.executeOnAllBtn = document.getElementById('executeOnAllBtn');
+        this.clientBtns = document.querySelectorAll('.client-btn');
+        
         this.init();
     }
     
     init() {
         this.loadSystemInfo();
         this.loadNetworkStatus();
+        this.loadClientStatus();
         this.setupEventListeners();
         
         // Auto-refresh every 30 seconds
         setInterval(() => {
             this.loadSystemInfo();
             this.loadNetworkStatus();
+            this.loadClientStatus();
         }, 30000);
     }
     
     setupEventListeners() {
+        // Server terminal events
         this.executeBtn.addEventListener('click', () => this.executeCommand());
         this.commandSelect.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.executeCommand();
             }
+        });
+        
+        // Client management events
+        this.executeOnAllBtn.addEventListener('click', () => this.executeOnAllClients());
+        this.clientCommandSelect.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.executeOnAllClients();
+            }
+        });
+        
+        // Individual client buttons
+        this.clientBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const client = e.target.getAttribute('data-client');
+                this.executeOnClient(client);
+            });
         });
     }
     
@@ -85,7 +111,159 @@ class OutrunTerminal {
             this.networkStatus.innerHTML = `<div class="error">Failed to load network status: ${error.message}</div>`;
         }
     }
-    
+
+    async loadClientStatus() {
+        try {
+            const response = await fetch('/api/clients');
+            const data = await response.json();
+            
+            if (data.error) {
+                this.clientStatus.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                return;
+            }
+            
+            let html = '<div class="client-info">';
+            
+            Object.entries(data).forEach(([clientName, info]) => {
+                const statusClass = info.running ? 'online' : 'offline';
+                const statusText = info.running ? 'ONLINE' : 'OFFLINE';
+                
+                html += `
+                    <div class="client-item ${statusClass}">
+                        <div class="client-name">${clientName.toUpperCase()}</div>
+                        <div class="client-details">
+                            Status: ${statusText}<br>
+                            Container: ${info.container_name}<br>
+                            IP: ${info.ip_address}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            this.clientStatus.innerHTML = html;
+        } catch (error) {
+            this.clientStatus.innerHTML = `<div class="error">Failed to load client status: ${error.message}</div>`;
+        }
+    }
+
+    async executeOnAllClients() {
+        const command = this.clientCommandSelect.value;
+        if (!command) return;
+        
+        // Add command to client output
+        this.addClientLine(`c2@malformed:~$ Executing "${command}" on all clients`, 'command');
+        
+        try {
+            const response = await fetch('/api/clients/execute-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ command })
+            });
+            
+            const data = await response.json();
+            
+            if (data.results) {
+                Object.entries(data.results).forEach(([clientName, result]) => {
+                    if (result.success) {
+                        this.addClientLine(`[${clientName.toUpperCase()}] Success:`, 'success-header');
+                        if (result.stdout) {
+                            this.addClientLine(result.stdout, 'success-output');
+                        }
+                        if (result.stderr) {
+                            this.addClientLine(`stderr: ${result.stderr}`, 'warning-output');
+                        }
+                    } else {
+                        this.addClientLine(`[${clientName.toUpperCase()}] Error:`, 'error-header');
+                        this.addClientLine(result.error, 'error-output');
+                    }
+                });
+            } else {
+                this.addClientLine(`Error: ${data.error}`, 'error-output');
+            }
+        } catch (error) {
+            this.addClientLine(`Network error: ${error.message}`, 'error-output');
+        }
+        
+        // Clear selection
+        this.clientCommandSelect.value = '';
+        
+        // Scroll to bottom
+        this.clientOutput.scrollTop = this.clientOutput.scrollHeight;
+    }
+
+    async executeOnClient(clientName) {
+        const command = this.clientCommandSelect.value;
+        if (!command) return;
+        
+        // Add command to client output
+        this.addClientLine(`c2@malformed:~$ Executing "${command}" on ${clientName.toUpperCase()}`, 'command');
+        
+        try {
+            const response = await fetch(`/api/clients/${clientName}/execute`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ command })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.addClientLine(`[${clientName.toUpperCase()}] Success:`, 'success-header');
+                if (data.stdout) {
+                    this.addClientLine(data.stdout, 'success-output');
+                }
+                if (data.stderr) {
+                    this.addClientLine(`stderr: ${data.stderr}`, 'warning-output');
+                }
+            } else {
+                this.addClientLine(`[${clientName.toUpperCase()}] Error:`, 'error-header');
+                this.addClientLine(data.error, 'error-output');
+            }
+        } catch (error) {
+            this.addClientLine(`Network error: ${error.message}`, 'error-output');
+        }
+        
+        // Clear selection
+        this.clientCommandSelect.value = '';
+        
+        // Scroll to bottom
+        this.clientOutput.scrollTop = this.clientOutput.scrollHeight;
+    }
+
+    addClientLine(text, type = 'output') {
+        const line = document.createElement('div');
+        line.className = 'terminal-line';
+        
+        if (type === 'command') {
+            line.innerHTML = `<span class="prompt">c2@malformed:~$</span> <span class="command">${text.replace('c2@malformed:~$ ', '')}</span>`;
+        } else if (type === 'error-header') {
+            line.innerHTML = `<span style="color: #FF0099; font-weight: bold;">${text}</span>`;
+        } else if (type === 'error-output') {
+            line.innerHTML = `<pre style="color: #FF0099; margin: 0; white-space: pre-wrap; padding-left: 20px;">${text}</pre>`;
+        } else if (type === 'success-header') {
+            line.innerHTML = `<span style="color: #00FFFF; font-weight: bold;">${text}</span>`;
+        } else if (type === 'success-output') {
+            line.innerHTML = `<pre style="color: #00FFFF; margin: 0; white-space: pre-wrap; padding-left: 20px;">${text}</pre>`;
+        } else if (type === 'warning-output') {
+            line.innerHTML = `<pre style="color: #FFAA00; margin: 0; white-space: pre-wrap; padding-left: 20px;">${text}</pre>`;
+        } else {
+            line.innerHTML = `<pre style="color: #00FFFF; margin: 0; white-space: pre-wrap;">${text}</pre>`;
+        }
+        
+        this.clientOutput.appendChild(line);
+        
+        // Limit client output history to last 100 lines
+        const lines = this.clientOutput.querySelectorAll('.terminal-line');
+        if (lines.length > 100) {
+            lines[0].remove();
+        }
+    }
+
     async executeCommand() {
         const command = this.commandSelect.value;
         if (!command) return;
@@ -221,5 +399,10 @@ document.addEventListener('DOMContentLoaded', () => {
         terminal.addTerminalLine('Malformed Labs C2 Terminal v2.0.85 initialized...', 'output');
         terminal.addTerminalLine('Cyberdeck connected to neural network...', 'output');
         terminal.addTerminalLine('All systems nominal. Ready for input.', 'output');
+        
+        // Add client management startup message
+        terminal.addClientLine('Client management system online...', 'output');
+        terminal.addClientLine('Scanning for connected endpoints...', 'output');
+        terminal.addClientLine('Ready to execute commands on client machines.', 'output');
     }, 1000);
 });

@@ -36,8 +36,51 @@
                 </div>
             </div>
 
+            <div class="panel client-panel">
+                <h2 class="panel-title">CLIENT MANAGEMENT</h2>
+                <div class="client-container">
+                    <div class="client-status" id="clientStatus">
+                        <div class="loading">Loading client status...</div>
+                    </div>
+                    <div class="client-controls">
+                        <div class="command-section">
+                            <select id="clientCommandSelect" class="terminal-select">
+                                <option value="">Select command...</option>
+                                <option value="whoami">whoami</option>
+                                <option value="hostname">hostname</option>
+                                <option value="pwd">pwd</option>
+                                <option value="ls">ls -la</option>
+                                <option value="date">date</option>
+                                <option value="uptime">uptime</option>
+                                <option value="ip addr">ip addr show</option>
+                                <option value="ps">ps aux</option>
+                                <option value="df">df -h</option>
+                                <option value="free">free -h</option>
+                                <option value="cat /etc/os-release">cat /etc/os-release</option>
+                                <option value="python3 --version">python3 --version</option>
+                                <option value="ping -c 3 8.8.8.8">ping -c 3 8.8.8.8</option>
+                            </select>
+                        </div>
+                        <div class="client-buttons">
+                            <button id="executeOnAllBtn" class="execute-btn">EXECUTE ON ALL</button>
+                            <div class="individual-buttons">
+                                <button id="executeOnEndpoint1" class="client-btn" data-client="endpoint1">ENDPOINT1</button>
+                                <button id="executeOnEndpoint2" class="client-btn" data-client="endpoint2">ENDPOINT2</button>
+                                <button id="executeOnEndpoint3" class="client-btn" data-client="endpoint3">ENDPOINT3</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="client-output" id="clientOutput">
+                        <div class="terminal-line">
+                            <span class="prompt">c2@malformed:~$</span>
+                            <span class="command">Client management initialized</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="panel terminal-panel">
-                <h2 class="panel-title">QUICK TERMINAL</h2>
+                <h2 class="panel-title">SERVER TERMINAL</h2>
                 <div class="terminal-container">
                     <div class="terminal-output" id="terminalOutput">
                         <div class="terminal-line">

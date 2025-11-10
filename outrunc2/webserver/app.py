@@ -11,8 +11,105 @@ import json
 import socket
 from datetime import datetime
 from ping3 import ping, verbose_ping
+import docker
 
 app = Flask(__name__)
+
+# Initialize Docker client
+try:
+    # Try to connect to Docker using the Unix socket directly
+    docker_client = docker.DockerClient(base_url='unix://var/run/docker.sock')
+    # Test the connection
+    docker_client.ping()
+except Exception as e:
+    try:
+        # Fallback to default from_env method
+        docker_client = docker.from_env()
+        docker_client.ping()
+    except Exception as e2:
+        docker_client = None
+        print(f"Warning: Could not connect to Docker: {e2}")
+
+# Client container mapping
+CLIENT_CONTAINERS = {
+    'endpoint1': 'linux_endpoint1',
+    'endpoint2': 'linux_endpoint2', 
+    'endpoint3': 'linux_endpoint3'
+}
+
+def execute_command_on_client(container_name, command):
+    """Execute a command on a specific client container"""
+    try:
+        # Use docker exec directly via subprocess as a more reliable method
+        cmd = ['docker', 'exec', container_name, 'sh', '-c', command]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        return {
+            'success': result.returncode == 0,
+            'exit_code': result.returncode,
+            'stdout': result.stdout,
+            'stderr': result.stderr
+        }
+        
+    except subprocess.TimeoutExpired:
+        return {'success': False, 'error': 'Command timed out after 30 seconds'}
+    except FileNotFoundError:
+        return {'success': False, 'error': 'Docker command not found'}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def get_client_status():
+    """Get status of all client containers"""
+    clients = {}
+    for client_name, container_name in CLIENT_CONTAINERS.items():
+        try:
+            # Use docker inspect to get container info
+            cmd = ['docker', 'inspect', container_name]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                import json
+                container_info = json.loads(result.stdout)[0]
+                
+                # Get container state
+                state = container_info['State']
+                running = state.get('Running', False)
+                status = 'running' if running else state.get('Status', 'unknown')
+                
+                # Get IP address
+                networks = container_info['NetworkSettings']['Networks']
+                ip_address = 'N/A'
+                if networks:
+                    # Try to find lab_network first, then any network
+                    for network_name, network_info in networks.items():
+                        if 'lab_network' in network_name and network_info.get('IPAddress'):
+                            ip_address = network_info['IPAddress']
+                            break
+                        elif network_info.get('IPAddress'):
+                            ip_address = network_info['IPAddress']
+                
+                clients[client_name] = {
+                    'container_name': container_name,
+                    'status': status,
+                    'running': running,
+                    'ip_address': ip_address
+                }
+            else:
+                clients[client_name] = {
+                    'container_name': container_name,
+                    'status': 'not_found',
+                    'running': False,
+                    'ip_address': 'N/A'
+                }
+        except Exception as e:
+            clients[client_name] = {
+                'container_name': container_name,
+                'status': f'error: {str(e)}',
+                'running': False,
+                'ip_address': 'N/A'
+            }
+    
+    return clients
 
 def get_system_info():
     """Get basic system information"""
@@ -178,6 +275,133 @@ def terminal():
 def about():
     """About page with theme information"""
     return render_template('about.html')
+
+@app.route('/api/clients')
+def api_clients():
+    """API endpoint for client container status"""
+    return jsonify(get_client_status())
+
+@app.route('/api/clients/<client_name>/execute', methods=['POST'])
+def api_client_execute(client_name):
+    """Execute command on specific client container"""
+    if client_name not in CLIENT_CONTAINERS:
+        return jsonify({
+            'success': False,
+            'error': f'Unknown client: {client_name}. Available clients: {", ".join(CLIENT_CONTAINERS.keys())}'
+        })
+    
+    data = request.get_json()
+    command = data.get('command', '').strip()
+    
+    if not command:
+        return jsonify({
+            'success': False,
+            'error': 'No command specified'
+        })
+    
+    # Whitelist of safe commands for client containers
+    safe_commands = {
+        'whoami': 'whoami',
+        'pwd': 'pwd', 
+        'ls': 'ls -la',
+        'date': 'date',
+        'uptime': 'uptime',
+        'ip addr': 'ip addr show',
+        'ps': 'ps aux',
+        'df': 'df -h',
+        'free': 'free -h',
+        'cat /etc/os-release': 'cat /etc/os-release',
+        'hostname': 'hostname',
+        'id': 'id',
+        'env': 'env',
+        'which python3': 'which python3',
+        'python3 --version': 'python3 --version',
+        'ping -c 3 8.8.8.8': 'ping -c 3 8.8.8.8',
+        'netstat -tuln': 'netstat -tuln'
+    }
+    
+    if command in safe_commands:
+        container_name = CLIENT_CONTAINERS[client_name]
+        result = execute_command_on_client(container_name, safe_commands[command])
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'client': client_name,
+                'container': container_name,
+                'command': command,
+                'stdout': result['stdout'],
+                'stderr': result['stderr'] if result['stderr'] else None,
+                'exit_code': result['exit_code']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'client': client_name,
+                'container': container_name,
+                'error': result['error']
+            })
+    else:
+        return jsonify({
+            'success': False,
+            'error': f'Command not allowed. Available commands: {", ".join(safe_commands.keys())}'
+        })
+
+@app.route('/api/clients/execute-all', methods=['POST'])
+def api_clients_execute_all():
+    """Execute command on all client containers"""
+    data = request.get_json()
+    command = data.get('command', '').strip()
+    
+    if not command:
+        return jsonify({
+            'success': False,
+            'error': 'No command specified'
+        })
+    
+    # Use the same safe commands whitelist
+    safe_commands = {
+        'whoami': 'whoami',
+        'pwd': 'pwd', 
+        'ls': 'ls -la',
+        'date': 'date',
+        'uptime': 'uptime',
+        'ip addr': 'ip addr show',
+        'ps': 'ps aux',
+        'df': 'df -h',
+        'free': 'free -h',
+        'cat /etc/os-release': 'cat /etc/os-release',
+        'hostname': 'hostname',
+        'id': 'id',
+        'env': 'env',
+        'which python3': 'which python3',
+        'python3 --version': 'python3 --version',
+        'ping -c 3 8.8.8.8': 'ping -c 3 8.8.8.8',
+        'netstat -tuln': 'netstat -tuln'
+    }
+    
+    if command not in safe_commands:
+        return jsonify({
+            'success': False,
+            'error': f'Command not allowed. Available commands: {", ".join(safe_commands.keys())}'
+        })
+    
+    results = {}
+    for client_name, container_name in CLIENT_CONTAINERS.items():
+        result = execute_command_on_client(container_name, safe_commands[command])
+        results[client_name] = {
+            'container': container_name,
+            'success': result['success'],
+            'stdout': result['stdout'] if result['success'] else None,
+            'stderr': result['stderr'] if result['success'] else None,
+            'error': result['error'] if not result['success'] else None,
+            'exit_code': result.get('exit_code', None)
+        }
+    
+    return jsonify({
+        'command': command,
+        'results': results
+    })
 
 @app.route('/api/execute', methods=['POST'])
 def api_execute():
