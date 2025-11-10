@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malformed Labs C2 - Terminal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/outrun.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        .terminal-full {
+            height: calc(100vh - 140px);
+            background: #050505;
+            border: 2px solid #6600FF;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            overflow-y: auto;
+        }
+        
+        .terminal-header {
+            color: #FF0099;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanner-line"></div>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">
+                <span class="neon-text">MALFORMED LABS</span>
+                <span class="subtitle">C2 TERMINAL ACCESS</span>
+            </h1>
+            <div class="system-status">
+                <div class="status-indicator online"></div>
+                <span>TERMINAL ACTIVE</span>
+            </div>
+        </header>
+
+        <div class="terminal-full">
+            <div class="terminal-header">Full Terminal Interface</div>
+            <div class="terminal-output" id="terminalOutput">
+                <div class="terminal-line">
+                    <span class="prompt">root@malformed:~$</span>
+                    <span class="command">Terminal initialized</span>
+                </div>
+            </div>
+            <div class="terminal-input-container">
+                <span class="prompt">root@malformed:~$</span>
+                <select id="commandSelect" class="terminal-select">
+                    <option value="">Select command...</option>
+                    <option value="whoami">whoami</option>
+                    <option value="pwd">pwd</option>
+                    <option value="ls">ls -la</option>
+                    <option value="date">date</option>
+                    <option value="uptime">uptime</option>
+                    <option value="ip addr">ip addr show</option>
+                    <option value="ps">ps aux</option>
+                    <option value="df">df -h</option>
+                    <option value="free">free -h</option>
+                </select>
+                <button id="executeBtn" class="execute-btn">EXECUTE</button>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/" style="color: #00FFFF; text-decoration: none; font-family: 'Orbitron', monospace; font-weight: 700;">← BACK TO DASHBOARD</a>
+        </div>
+
+        <div class="grid-overlay"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/outrun.js') }}"></script>
+</body>
+</html>

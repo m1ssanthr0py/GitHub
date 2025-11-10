@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malformed Labs C2 - About</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/outrun.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="scanner-line"></div>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">
+                <span class="neon-text">MALFORMED LABS</span>
+                <span class="subtitle">C2 ABOUT</span>
+            </h1>
+            <div class="system-status">
+                <div class="status-indicator online"></div>
+                <span>INFORMATION ACCESS</span>
+            </div>
+        </header>
+
+        <div class="dashboard">
+            <div class="panel" style="grid-column: 1 / -1;">
+                <h2 class="panel-title">About Malformed Labs C2</h2>
+                <div class="about-content">
+                    <p style="color: #00FFFF; line-height: 1.8; margin-bottom: 20px;">
+                        Welcome to <strong style="color: #FF0099;">Malformed Labs C2</strong> - Command and Control Terminal Interface. 
+                        This cybernetic interface provides real-time monitoring and control capabilities for distributed lab environments.
+                    </p>
+                    
+                    <div style="margin: 30px 0;">
+                        <h3 style="color: #FF0099; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">System Capabilities</h3>
+                        <ul style="color: #00FFFF; line-height: 1.6; padding-left: 20px;">
+                            <li>Real-time system monitoring and diagnostics</li>
+                            <li>Network connectivity assessment across lab endpoints</li>
+                            <li>Secure command execution with safety restrictions</li>
+                            <li>Multi-endpoint coordination and control</li>
+                            <li>Automated health checks and status reporting</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel theme-panel">
+                <h2 class="panel-title">Theme: OUTRUN</h2>
+                <div class="theme-info">
+                    <p style="color: #00FFFF; margin-bottom: 20px; line-height: 1.6;">
+                        The interface utilizes the <strong style="color: #FF0099;">OUTRUN</strong> aesthetic - 
+                        a retro-futuristic design language inspired by 1980s cyberpunk and synthwave culture.
+                    </p>
+                    
+                    <h3 style="color: #6600FF; margin: 20px 0 15px 0; font-size: 1rem; text-transform: uppercase;">Color Palette</h3>
+                    <div class="color-palette">
+                        <div class="color-item">
+                            <div class="color-swatch" style="background: #00FFFF; border: 2px solid #00FFFF; box-shadow: 0 0 10px #00FFFF;"></div>
+                            <div class="color-info">
+                                <div style="color: #00FFFF; font-weight: 700;">Neon Cyan</div>
+                                <div style="color: #999; font-size: 0.8rem;">#00FFFF</div>
+                                <div style="color: #AAA; font-size: 0.8rem;">Gridlines & Reflections</div>
+                            </div>
+                        </div>
+                        
+                        <div class="color-item">
+                            <div class="color-swatch" style="background: #6600FF; border: 2px solid #6600FF; box-shadow: 0 0 10px #6600FF;"></div>
+                            <div class="color-info">
+                                <div style="color: #6600FF; font-weight: 700;">Electric Indigo</div>
+                                <div style="color: #999; font-size: 0.8rem;">#6600FF</div>
+                                <div style="color: #AAA; font-size: 0.8rem;">Core Glow</div>
+                            </div>
+                        </div>
+                        
+                        <div class="color-item">
+                            <div class="color-swatch" style="background: #FF0099; border: 2px solid #FF0099; box-shadow: 0 0 10px #FF0099;"></div>
+                            <div class="color-info">
+                                <div style="color: #FF0099; font-weight: 700;">Laser Pink</div>
+                                <div style="color: #999; font-size: 0.8rem;">#FF0099</div>
+                                <div style="color: #AAA; font-size: 0.8rem;">UI Highlights & Accents</div>
+                            </div>
+                        </div>
+                        
+                        <div class="color-item">
+                            <div class="color-swatch" style="background: #2E003E; border: 2px solid #6600FF;"></div>
+                            <div class="color-info">
+                                <div style="color: #9966CC; font-weight: 700;">Cosmic Purple</div>
+                                <div style="color: #999; font-size: 0.8rem;">#2E003E</div>
+                                <div style="color: #AAA; font-size: 0.8rem;">Background Depth</div>
+                            </div>
+                        </div>
+                        
+                        <div class="color-item">
+                            <div class="color-swatch" style="background: #050505; border: 2px solid #666;"></div>
+                            <div class="color-info">
+                                <div style="color: #AAA; font-weight: 700;">Jet Black</div>
+                                <div style="color: #999; font-size: 0.8rem;">#050505</div>
+                                <div style="color: #AAA; font-size: 0.8rem;">Base Neutral Tone</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel navigation-panel">
+                <h2 class="panel-title">Navigation</h2>
+                <div class="nav-links">
+                    <a href="/" class="nav-link">← Dashboard</a>
+                    <a href="/terminal" class="nav-link">Terminal Interface</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-overlay"></div>
+    </div>
+
+    <style>
+        .theme-panel {
+            grid-column: 1 / -1;
+        }
+        
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background: rgba(46, 0, 62, 0.3);
+            border: 1px solid #6600FF;
+            border-radius: 5px;
+        }
+        
+        .color-swatch {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .color-info {
+            flex: 1;
+        }
+        
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .nav-link {
+            display: block;
+            color: #00FFFF;
+            text-decoration: none;
+            padding: 10px 15px;
+            border: 1px solid #6600FF;
+            border-radius: 5px;
+            background: rgba(46, 0, 62, 0.3);
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background: rgba(102, 0, 255, 0.2);
+            border-color: #FF0099;
+            color: #FF0099;
+            box-shadow: 0 0 15px rgba(255, 0, 153, 0.3);
+        }
+        
+        .about-content {
+            font-family: 'Orbitron', monospace;
+        }
+        
+        @media (max-width: 768px) {
+            .color-palette {
+                grid-template-columns: 1fr;
+            }
+            
+            .color-item {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</body>
+</html>

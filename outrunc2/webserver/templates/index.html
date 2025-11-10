@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malformed Labs C2</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/outrun.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="scanner-line"></div>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">
+                <span class="neon-text">MALFORMED LABS</span>
+                <span class="subtitle">C2 TERMINAL</span>
+            </h1>
+            <div class="system-status" id="systemStatus">
+                <div class="status-indicator online" id="statusDot"></div>
+                <span>SYSTEM ONLINE</span>
+            </div>
+        </header>
+
+        <div class="dashboard">
+            <div class="panel system-panel">
+                <h2 class="panel-title">SYSTEM INFO</h2>
+                <div class="system-info" id="systemInfo">
+                    <div class="loading">Loading system data...</div>
+                </div>
+            </div>
+
+            <div class="panel network-panel">
+                <h2 class="panel-title">NETWORK STATUS</h2>
+                <div class="network-status" id="networkStatus">
+                    <div class="loading">Scanning network...</div>
+                </div>
+            </div>
+
+            <div class="panel terminal-panel">
+                <h2 class="panel-title">QUICK TERMINAL</h2>
+                <div class="terminal-container">
+                    <div class="terminal-output" id="terminalOutput">
+                        <div class="terminal-line">
+                            <span class="prompt">root@malformed:~$</span>
+                            <span class="command">System initialized</span>
+                        </div>
+                    </div>
+                    <div class="terminal-input-container">
+                        <span class="prompt">root@malformed:~$</span>
+                        <select id="commandSelect" class="terminal-select">
+                            <option value="">Select command...</option>
+                            <option value="whoami">whoami</option>
+                            <option value="pwd">pwd</option>
+                            <option value="ls">ls</option>
+                            <option value="date">date</option>
+                            <option value="uptime">uptime</option>
+                            <option value="ip addr">ip addr</option>
+                            <option value="ps">ps</option>
+                            <option value="df">df</option>
+                            <option value="free">free</option>
+                        </select>
+                        <button id="executeBtn" class="execute-btn">EXECUTE</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="navigation-bar">
+            <a href="/terminal" class="nav-button">Full Terminal</a>
+            <a href="/about" class="nav-button">About & Theme</a>
+        </div>
+
+        <div class="grid-overlay"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/outrun.js') }}"></script>
+</body>
+</html>

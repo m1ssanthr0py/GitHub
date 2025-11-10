@@ -31,6 +31,27 @@ services:
         ipv4_address: 192.168.210.12
     hostname: endpoint3
 
+  webserver:
+    build:
+      context: ../webserver
+      dockerfile: Dockerfile
+    container_name: outrun_webserver
+    ports:
+      - "8080:8080"
+    cap_add:
+      - NET_RAW
+    networks:
+      lab_network:
+        ipv4_address: 192.168.210.13
+    hostname: outrun-server
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 networks:
   lab_network:
     driver: bridge
