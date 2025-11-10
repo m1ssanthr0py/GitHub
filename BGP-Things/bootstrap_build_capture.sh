@@ -1,4 +1,3 @@
-bootstrap_build_capture.sh
 #!/usr/bin/env bash
 # bootstrap_build_capture.sh
 # Build/start the docker-bgp lab, set client default route, then ping AS3000 from Client
@@ -241,145 +240,145 @@ write_file "${COMPOSE_PATH}" "$(cat <<EOF
 name: docker-bgp
 services:
   client:
-	build:
-  	context: ./docker-bgp/client
-  	dockerfile: Dockerfile
-	container_name: ${CLIENT_NAME}
-	cap_add: [NET_ADMIN, NET_RAW]
-	networks:
-  	lan_client6:
-    	ipv6_address: "${CLIENT_LAN_IP}"
-	healthcheck:
-  	test: ["CMD-SHELL", "ping -6 -c1 -W1 ${AS1000_LAN_IP} >/dev/null 2>&1 || ping -6 -c1 -W1 ${CLIENT_LAN_IP} >/dev/null 2>&1"]
-  	interval: 10s
-  	timeout: 5s
-  	retries: 12
-  	start_period: 45s
-	restart: unless-stopped
+    build:
+      context: ./docker-bgp/client
+      dockerfile: Dockerfile
+    container_name: ${CLIENT_NAME}
+    cap_add: [NET_ADMIN, NET_RAW]
+    networks:
+      lan_client6:
+        ipv6_address: "${CLIENT_LAN_IP}"
+    healthcheck:
+      test: ["CMD-SHELL", "ping -6 -c1 -W1 ${AS1000_LAN_IP} >/dev/null 2>&1 || ping -6 -c1 -W1 ${CLIENT_LAN_IP} >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+    restart: unless-stopped
 
   as1000:
-	image: quay.io/frrouting/frr:10.4.1
-	container_name: ${AS1000_NAME}
-	cap_add: [NET_ADMIN, NET_RAW, NET_BIND_SERVICE, SYS_ADMIN]
-	sysctls:
-  	net.ipv6.conf.all.forwarding: "1"
-	volumes:
-  	- ./docker-bgp/as1000/frr.conf:/etc/frr/frr.conf:ro
-  	- ./docker-bgp/as1000/daemons:/etc/frr/daemons:ro
-  	- ./docker-bgp/as1000/vtysh.conf:/etc/frr/vtysh.conf:ro
-  	- ./captures:${CONTAINER_CAP_DIR}
-	networks:
-  	link_1000_2000:
-    	ipv6_address: "${AS1000_1000_2000_IP}"
-  	link_1000_1337:
-    	ipv6_address: "${AS1000_1000_1337_IP}"
-  	lan_client6:
-    	ipv6_address: "${AS1000_LAN_IP}"
-	healthcheck:
-  	test: ["CMD-SHELL", "pidof zebra >/dev/null && pidof bgpd >/dev/null && vtysh -c 'show running' >/dev/null 2>&1"]
-  	interval: 10s
-  	timeout: 5s
-  	retries: 18
-  	start_period: 60s
-	restart: unless-stopped
+    image: quay.io/frrouting/frr:10.4.1
+    container_name: ${AS1000_NAME}
+    cap_add: [NET_ADMIN, NET_RAW, NET_BIND_SERVICE, SYS_ADMIN]
+    sysctls:
+      net.ipv6.conf.all.forwarding: "1"
+    volumes:
+      - ./docker-bgp/as1000/frr.conf:/etc/frr/frr.conf:ro
+      - ./docker-bgp/as1000/daemons:/etc/frr/daemons:ro
+      - ./docker-bgp/as1000/vtysh.conf:/etc/frr/vtysh.conf:ro
+      - ./captures:${CONTAINER_CAP_DIR}
+    networks:
+      link_1000_2000:
+        ipv6_address: "${AS1000_1000_2000_IP}"
+      link_1000_1337:
+        ipv6_address: "${AS1000_1000_1337_IP}"
+      lan_client6:
+        ipv6_address: "${AS1000_LAN_IP}"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof zebra >/dev/null && pidof bgpd >/dev/null && vtysh -c 'show running' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
+    restart: unless-stopped
 
   as1337:
-	image: quay.io/frrouting/frr:10.4.1
-	container_name: ${AS1337_NAME}
-	cap_add: [NET_ADMIN, NET_RAW, NET_BIND_SERVICE, SYS_ADMIN]
-	sysctls:
-  	net.ipv6.conf.all.forwarding: "1"
-	volumes:
-  	- ./docker-bgp/as1337/frr.conf:/etc/frr/frr.conf:ro
-  	- ./docker-bgp/as1337/daemons:/etc/frr/daemons:ro
-  	- ./docker-bgp/as1337/vtysh.conf:/etc/frr/vtysh.conf:ro
-	networks:
-  	link_1000_1337:
-    	ipv6_address: "${AS1337_1000_1337_IP}"
-	healthcheck:
-  	test: ["CMD-SHELL", "pidof zebra >/dev/null && pidof bgpd >/dev/null && vtysh -c 'show running' >/dev/null 2>&1"]
-  	interval: 10s
-  	timeout: 5s
-  	retries: 18
-  	start_period: 60s
-	restart: unless-stopped
+    image: quay.io/frrouting/frr:10.4.1
+    container_name: ${AS1337_NAME}
+    cap_add: [NET_ADMIN, NET_RAW, NET_BIND_SERVICE, SYS_ADMIN]
+    sysctls:
+      net.ipv6.conf.all.forwarding: "1"
+    volumes:
+      - ./docker-bgp/as1337/frr.conf:/etc/frr/frr.conf:ro
+      - ./docker-bgp/as1337/daemons:/etc/frr/daemons:ro
+      - ./docker-bgp/as1337/vtysh.conf:/etc/frr/vtysh.conf:ro
+    networks:
+      link_1000_1337:
+        ipv6_address: "${AS1337_1000_1337_IP}"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof zebra >/dev/null && pidof bgpd >/dev/null && vtysh -c 'show running' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
+    restart: unless-stopped
 
   as2000:
-	image: quay.io/frrouting/frr:10.4.1
-	container_name: ${AS2000_NAME}
-	cap_add: [NET_ADMIN, NET_RAW, NET_BIND_SERVICE, SYS_ADMIN]
-	sysctls:
-  	net.ipv6.conf.all.forwarding: "1"
-	volumes:
-  	- ./docker-bgp/as2000/frr.conf:/etc/frr/frr.conf:ro
-  	- ./docker-bgp/as2000/daemons:/etc/frr/daemons:ro
-  	- ./docker-bgp/as2000/vtysh.conf:/etc/frr/vtysh.conf:ro
-	networks:
-  	link_1000_2000:
-    	ipv6_address: "${AS2000_1000_2000_IP}"
-  	link_2000_3000:
-    	ipv6_address: "${AS2000_2000_3000_IP}"
-	healthcheck:
-  	test: ["CMD-SHELL", "pidof zebra >/dev/null && pidof bgpd >/dev/null && vtysh -c 'show running' >/dev/null 2>&1"]
-  	interval: 10s
-  	timeout: 5s
-  	retries: 18
-  	start_period: 60s
-	restart: unless-stopped
+    image: quay.io/frrouting/frr:10.4.1
+    container_name: ${AS2000_NAME}
+    cap_add: [NET_ADMIN, NET_RAW, NET_BIND_SERVICE, SYS_ADMIN]
+    sysctls:
+      net.ipv6.conf.all.forwarding: "1"
+    volumes:
+      - ./docker-bgp/as2000/frr.conf:/etc/frr/frr.conf:ro
+      - ./docker-bgp/as2000/daemons:/etc/frr/daemons:ro
+      - ./docker-bgp/as2000/vtysh.conf:/etc/frr/vtysh.conf:ro
+    networks:
+      link_1000_2000:
+        ipv6_address: "${AS2000_1000_2000_IP}"
+      link_2000_3000:
+        ipv6_address: "${AS2000_2000_3000_IP}"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof zebra >/dev/null && pidof bgpd >/dev/null && vtysh -c 'show running' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
+    restart: unless-stopped
 
   as3000:
-	image: quay.io/frrouting/frr:10.4.1
-	container_name: ${AS3000_NAME}
-	cap_add: [NET_ADMIN, NET_RAW, NET_BIND_SERVICE, SYS_ADMIN]
-	sysctls:
-  	net.ipv6.conf.all.forwarding: "1"
-	volumes:
-  	- ./docker-bgp/as3000/frr.conf:/etc/frr/frr.conf:ro
-  	- ./docker-bgp/as3000/daemons:/etc/frr/daemons:ro
-  	- ./docker-bgp/as3000/vtysh.conf:/etc/frr/vtysh.conf:ro
-	networks:
-  	link_2000_3000:
-    	ipv6_address: "${AS3000_2000_3000_IP}"
-	healthcheck:
-  	test: ["CMD-SHELL", "pidof zebra >/dev/null && pidof bgpd >/dev/null && vtysh -c 'show running' >/dev/null 2>&1"]
-  	interval: 10s
-  	timeout: 5s
-  	retries: 18
-  	start_period: 60s
-	restart: unless-stopped
+    image: quay.io/frrouting/frr:10.4.1
+    container_name: ${AS3000_NAME}
+    cap_add: [NET_ADMIN, NET_RAW, NET_BIND_SERVICE, SYS_ADMIN]
+    sysctls:
+      net.ipv6.conf.all.forwarding: "1"
+    volumes:
+      - ./docker-bgp/as3000/frr.conf:/etc/frr/frr.conf:ro
+      - ./docker-bgp/as3000/daemons:/etc/frr/daemons:ro
+      - ./docker-bgp/as3000/vtysh.conf:/etc/frr/vtysh.conf:ro
+    networks:
+      link_2000_3000:
+        ipv6_address: "${AS3000_2000_3000_IP}"
+    healthcheck:
+      test: ["CMD-SHELL", "pidof zebra >/dev/null && pidof bgpd >/dev/null && vtysh -c 'show running' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 60s
+    restart: unless-stopped
 
 networks:
   lan_client6:
-	driver: bridge
-	enable_ipv6: true
-	ipam:
-  	driver: default
-  	config:
-    	- subnet: "2001:10:10:10::/64"
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: "2001:10:10:10::/64"
 
   link_1000_2000:
-	driver: bridge
-	enable_ipv6: true
-	ipam:
-  	driver: default
-  	config:
-    	- subnet: "2001:12:12:12::/64"
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: "2001:12:12:12::/64"
 
   link_1000_1337:
-	driver: bridge
-	enable_ipv6: true
-	ipam:
-  	driver: default
-  	config:
-    	- subnet: "2001:1:33:7::/64"
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: "2001:1:33:7::/64"
 
   link_2000_3000:
-	driver: bridge
-	enable_ipv6: true
-	ipam:
-  	driver: default
-  	config:
-    	- subnet: "2001:23:23:23::/64"
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: "2001:23:23:23::/64"
 EOF
 )"
 
