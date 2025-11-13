@@ -36,6 +36,37 @@
                 </div>
             </div>
 
+            <div class="panel connections-panel">
+                <h2 class="panel-title">🔴 LIVE CONNECTIONS MONITOR</h2>
+                <div class="connections-container">
+                    <div class="connection-stats" id="connectionStats">
+                        <div class="stat-box">
+                            <div class="stat-value" id="totalClients">0</div>
+                            <div class="stat-label">TOTAL</div>
+                        </div>
+                        <div class="stat-box active">
+                            <div class="stat-value" id="activeClients">0</div>
+                            <div class="stat-label">ACTIVE</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="totalEvents">0</div>
+                            <div class="stat-label">EVENTS</div>
+                        </div>
+                    </div>
+                    <div class="connection-display">
+                        <div class="connected-clients" id="connectedClients">
+                            <div class="loading">Monitoring for connections...</div>
+                        </div>
+                        <div class="connection-events" id="connectionEvents">
+                            <h3 class="events-title">RECENT ACTIVITY</h3>
+                            <div class="events-log" id="eventsLog">
+                                <div class="loading">Waiting for events...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="panel client-panel">
                 <h2 class="panel-title">CLIENT MANAGEMENT</h2>
                 <div class="client-container">

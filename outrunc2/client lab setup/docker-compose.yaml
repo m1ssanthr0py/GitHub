@@ -2,38 +2,62 @@ services:
   endpoint1:
     image: alpine:latest
     container_name: linux_endpoint1
-    command: >
-      sh -c "apk add --no-cache python3 py3-pip && tail -f /dev/null"
+    volumes:
+      - ./auto-client.sh:/usr/local/bin/auto-client.sh:ro
+    command: ["/usr/local/bin/auto-client.sh"]
+    environment:
+      - C2_HOST=192.168.210.170
+      - C2_PORT=8080
     stdin_open: true
     tty: true
     networks:
       lab_network:
         ipv4_address: 192.168.210.10
     hostname: endpoint1
+    depends_on:
+      webserver:
+        condition: service_healthy
+    restart: unless-stopped
 
   endpoint2:
     image: alpine:latest
     container_name: linux_endpoint2
-    command: >
-      sh -c "apk add --no-cache python3 py3-pip && tail -f /dev/null"
+    volumes:
+      - ./auto-client.sh:/usr/local/bin/auto-client.sh:ro
+    command: ["/usr/local/bin/auto-client.sh"]
+    environment:
+      - C2_HOST=192.168.210.170
+      - C2_PORT=8080
     stdin_open: true
     tty: true
     networks:
       lab_network:
         ipv4_address: 192.168.210.11
     hostname: endpoint2
+    depends_on:
+      webserver:
+        condition: service_healthy
+    restart: unless-stopped
 
   endpoint3:
     image: alpine:latest
     container_name: linux_endpoint3
-    command: >
-      sh -c "apk add --no-cache python3 py3-pip && tail -f /dev/null"
+    volumes:
+      - ./auto-client.sh:/usr/local/bin/auto-client.sh:ro
+    command: ["/usr/local/bin/auto-client.sh"]
+    environment:
+      - C2_HOST=192.168.210.170
+      - C2_PORT=8080
     stdin_open: true
     tty: true
     networks:
       lab_network:
         ipv4_address: 192.168.210.12
     hostname: endpoint3
+    depends_on:
+      webserver:
+        condition: service_healthy
+    restart: unless-stopped
 
   webserver:
     build:

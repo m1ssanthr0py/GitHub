@@ -15,6 +15,15 @@ class OutrunTerminal {
         this.executeOnAllBtn = document.getElementById('executeOnAllBtn');
         this.clientBtns = document.querySelectorAll('.client-btn');
         
+        // Connection monitoring elements
+        this.connectionStats = document.getElementById('connectionStats');
+        this.connectedClients = document.getElementById('connectedClients');
+        this.connectionEvents = document.getElementById('connectionEvents');
+        this.eventsLog = document.getElementById('eventsLog');
+        this.totalClients = document.getElementById('totalClients');
+        this.activeClients = document.getElementById('activeClients');
+        this.totalEvents = document.getElementById('totalEvents');
+        
         this.init();
     }
     
@@ -22,14 +31,20 @@ class OutrunTerminal {
         this.loadSystemInfo();
         this.loadNetworkStatus();
         this.loadClientStatus();
+        this.loadConnectionMonitor();
         this.setupEventListeners();
         
-        // Auto-refresh every 30 seconds
+        // Auto-refresh intervals
         setInterval(() => {
             this.loadSystemInfo();
             this.loadNetworkStatus();
             this.loadClientStatus();
         }, 30000);
+        
+        // More frequent connection monitoring updates
+        setInterval(() => {
+            this.loadConnectionMonitor();
+        }, 5000);
     }
     
     setupEventListeners() {
@@ -304,23 +319,142 @@ class OutrunTerminal {
     }
     
     addTerminalLine(text, type = 'output') {
+        const terminalOutput = document.getElementById('terminalOutput');
         const line = document.createElement('div');
         line.className = 'terminal-line';
         
         if (type === 'command') {
-            line.innerHTML = `<span class="prompt">root@malformed:~$</span> <span class="command">${text.replace('root@malformed:~$ ', '')}</span>`;
+            line.innerHTML = `<span class="prompt">root@malformed:~$</span><span class="command">${text}</span>`;
         } else if (type === 'error') {
-            line.innerHTML = `<span style="color: #FF0099;">${text}</span>`;
+            line.innerHTML = `<span class="error">${text}</span>`;
         } else {
-            line.innerHTML = `<pre style="color: #00FFFF; margin: 0; white-space: pre-wrap;">${text}</pre>`;
+            line.innerHTML = `<span class="output">${text}</span>`;
         }
         
-        this.terminalOutput.appendChild(line);
+        terminalOutput.appendChild(line);
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    }
+
+    async loadConnectionMonitor() {
+        try {
+            const response = await fetch('/api/connections');
+            const data = await response.json();
+            
+            if (!data.success) {
+                console.error('Failed to load connection data:', data.error);
+                return;
+            }
+            
+            // Update connection statistics
+            this.updateConnectionStats(data);
+            
+            // Update connected clients display
+            this.updateConnectedClients(data.clients);
+            
+            // Update events log
+            this.updateEventsLog(data.events);
+            
+        } catch (error) {
+            console.error('Connection monitor error:', error);
+        }
+    }
+
+    updateConnectionStats(data) {
+        if (this.totalClients) {
+            this.totalClients.textContent = data.total_clients || 0;
+        }
+        if (this.activeClients) {
+            this.activeClients.textContent = data.active_clients || 0;
+        }
+        if (this.totalEvents) {
+            this.totalEvents.textContent = data.total_events || 0;
+        }
+    }
+
+    updateConnectedClients(clients) {
+        if (!this.connectedClients) return;
         
-        // Limit terminal history to last 50 lines
-        const lines = this.terminalOutput.querySelectorAll('.terminal-line');
-        if (lines.length > 50) {
-            lines[0].remove();
+        if (!clients || Object.keys(clients).length === 0) {
+            this.connectedClients.innerHTML = '<div class="loading">No clients connected</div>';
+            return;
+        }
+        
+        let html = '';
+        Object.values(clients).forEach(client => {
+            const statusClass = client.status === 'connected' ? 'online' : 'disconnected';
+            const lastSeen = new Date(client.last_seen).toLocaleString();
+            
+            html += `
+                <div class="client-connection ${statusClass}">
+                    <div class="client-header">
+                        <div class="client-id">${client.client_id}</div>
+                        <div class="client-status-badge ${statusClass}">${client.status.toUpperCase()}</div>
+                    </div>
+                    <div class="client-details">
+                        <strong>Host:</strong> ${client.hostname || 'unknown'}<br>
+                        <strong>OS:</strong> ${client.os || 'unknown'}<br>
+                        <strong>IP:</strong> ${client.remote_ip}<br>
+                        <strong>Last Seen:</strong> ${lastSeen}<br>
+                        <strong>Commands:</strong> ${client.command_count || 0} | <strong>Results:</strong> ${client.result_count || 0}
+                    </div>
+                </div>
+            `;
+        });
+        
+        this.connectedClients.innerHTML = html;
+    }
+
+    updateEventsLog(events) {
+        if (!this.eventsLog) return;
+        
+        if (!events || events.length === 0) {
+            this.eventsLog.innerHTML = '<div class="loading">No events yet</div>';
+            return;
+        }
+        
+        let html = '';
+        events.reverse().forEach(event => {
+            const timestamp = new Date(event.timestamp).toLocaleTimeString();
+            
+            html += `
+                <div class="event-entry ${event.type}">
+                    <div>
+                        <span class="event-timestamp">[${timestamp}]</span>
+                        <span class="event-type">${event.type}</span>
+                        <span class="event-client">${event.client_id}</span>
+                    </div>
+                    ${event.details ? `<div class="event-details">${event.details}</div>` : ''}
+                </div>
+            `;
+        });
+        
+        this.eventsLog.innerHTML = html;
+    }
+
+    async sendCommandToClient(clientId, command) {
+        try {
+            const response = await fetch(`/api/clients/${clientId}/command`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ command: command })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.addClientLine(`Command sent to ${clientId}: ${command}`, 'command');
+                // Trigger immediate refresh of connection monitor
+                setTimeout(() => this.loadConnectionMonitor(), 500);
+            } else {
+                this.addClientLine(`Error sending command to ${clientId}: ${result.error}`, 'error');
+            }
+            
+            return result;
+        } catch (error) {
+            console.error('Error sending command:', error);
+            this.addClientLine(`Network error: ${error.message}`, 'error');
         }
     }
     
